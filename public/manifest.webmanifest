@@ -1,0 +1,20 @@
+{
+  "name": "Grovv — Grow on Purpose",
+  "short_name": "Grovv",
+  "description": "Habits, mood, focus, and a private journal — wrapped in one calm space.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f2eb",
+  "theme_color": "#2d5a27",
+  "categories": ["lifestyle", "health", "productivity"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
