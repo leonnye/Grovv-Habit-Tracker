@@ -14,12 +14,16 @@ import {
 } from "@/lib/habits";
 import { dbToCsv } from "@/lib/csv";
 import { requestNotificationPermission } from "@/lib/reminders";
+import { displayNameOf, signOut, useAuth } from "@/lib/auth";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 export const Route = createFileRoute("/settings")({ component: SettingsPage });
 
 function SettingsPage() {
   const db = useDb();
   const mounted = useMounted();
+  const auth = useAuth();
+  const cloudConfigured = isSupabaseConfigured();
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
@@ -271,12 +275,56 @@ function SettingsPage() {
         </Card>
 
         <Card
-          title="Privacy"
-          desc="Grovv stores everything locally in your browser. No account, no cloud, no tracking."
+          title="Account & cloud sync"
+          desc={
+            cloudConfigured
+              ? auth.user
+                ? "You're signed in. Progress photos sync to your private account."
+                : "Sign in to back up data and use the photo gallery — totally optional."
+              : "Local-only mode. Cloud sync isn't configured in this build."
+          }
         >
-          <Pill>Local-only</Pill>
-          <Pill>No sign-up</Pill>
-          <Pill>Offline-first</Pill>
+          {auth.user ? (
+            <div className="w-full flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="size-9 rounded-full bg-primary/15 text-primary grid place-items-center font-display font-bold">
+                  {(displayNameOf(auth.user) || auth.user.email || "?").slice(0, 1).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">
+                    {displayNameOf(auth.user) || "Signed in"}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{auth.user.email}</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 ml-auto">
+                <Link
+                  to="/photos"
+                  className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground"
+                >
+                  Open Photos
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void signOut()}
+                  className="rounded-full border border-border bg-[var(--surface-2)] px-4 py-2 text-xs font-semibold hover:border-[color:var(--destructive)]/40 hover:text-[color:var(--destructive)] transition-colors"
+                >
+                  Sign out
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full flex flex-wrap items-center gap-2">
+              <Pill>{cloudConfigured ? "Sign-in optional" : "Local-only"}</Pill>
+              <Pill>Offline-first</Pill>
+              <Link
+                to="/account"
+                className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground ml-auto"
+              >
+                {cloudConfigured ? "Sign in / sign up" : "Configure sync"}
+              </Link>
+            </div>
+          )}
         </Card>
 
         <Card

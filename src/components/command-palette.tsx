@@ -40,7 +40,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       { id: "go-habits", label: "Manage habits", icon: "◎", path: "/habits" },
       { id: "go-analytics", label: "Open analytics", icon: "▢", path: "/analytics" },
       { id: "go-wellness", label: "Open wellness", icon: "♡", path: "/wellness" },
+      { id: "go-photos", label: "Open photos", icon: "📷", path: "/photos" },
       { id: "go-timer", label: "Open focus timer", icon: "⏱", path: "/timer" },
+      { id: "go-account", label: "Account & sign-in", icon: "◐", path: "/account" },
       { id: "go-settings", label: "Open settings", icon: "⚙", path: "/settings" },
       { id: "go-pricing", label: "Grovv Pro", icon: "💎", path: "/pricing" },
     ];

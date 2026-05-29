@@ -174,7 +174,7 @@ function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex w-full max-w-2xl flex-col px-4 py-8 sm:py-12 min-h-screen">
+      <div className="mx-auto flex w-full max-w-2xl flex-col px-4 py-6 sm:py-12 min-h-screen pb-[env(safe-area-inset-bottom)]">
         <Header step={stepIndex} total={total} progress={progress} />
 
         <main className="flex-1 mt-8">
@@ -260,12 +260,12 @@ function Footer({
   nextLabel: string;
 }) {
   return (
-    <div className="mt-8 flex items-center justify-between gap-3">
+    <div className="mt-8 flex items-center gap-3">
       <button
         type="button"
         onClick={onBack}
         disabled={stepIndex === 0}
-        className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold disabled:opacity-30 hover:bg-[var(--surface-2)] transition-colors"
+        className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold disabled:opacity-30 hover:bg-[var(--surface-2)] transition-colors shrink-0"
       >
         Back
       </button>
@@ -273,11 +273,11 @@ function Footer({
         type="button"
         onClick={onNext}
         disabled={!canGoNext}
-        className="rounded-full bg-primary px-7 py-2.5 text-sm font-semibold text-primary-foreground hover:shadow-glow disabled:opacity-50 transition-all"
+        className="flex-1 sm:flex-initial rounded-full bg-primary px-5 sm:px-7 py-3 sm:py-2.5 text-sm font-semibold text-primary-foreground hover:shadow-glow disabled:opacity-50 transition-all"
       >
         {nextLabel}
       </button>
-      <span className="hidden sm:block text-xs text-muted-foreground">
+      <span className="hidden sm:block text-xs text-muted-foreground ml-auto">
         {stepIndex + 1}/{total}
       </span>
     </div>

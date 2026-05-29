@@ -126,7 +126,14 @@ function SplashPage() {
           className="mt-8 text-xs text-foreground/60 grovv-fade-up"
           style={{ animationDelay: "0.9s" }}
         >
-          Local-only. Private by default.
+          Works fully offline · sign-in is optional ·{" "}
+          <button
+            type="button"
+            onClick={() => void navigate({ to: "/account" })}
+            className="underline underline-offset-2 hover:text-foreground"
+          >
+            sign in to sync photos
+          </button>
         </p>
       </div>
     </div>

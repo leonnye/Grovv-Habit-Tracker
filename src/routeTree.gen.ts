@@ -15,9 +15,11 @@ import { Route as SplashRouteImport } from './routes/splash'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as PhotosRouteImport } from './routes/photos'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as HabitsRouteImport } from './routes/habits'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 
 const WellnessRoute = WellnessRouteImport.update({
@@ -50,6 +52,11 @@ const PricingRoute = PricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PhotosRoute = PhotosRouteImport.update({
+  id: '/photos',
+  path: '/photos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -65,6 +72,11 @@ const AnalyticsRoute = AnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -73,9 +85,11 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/analytics': typeof AnalyticsRoute
   '/habits': typeof HabitsRoute
   '/onboarding': typeof OnboardingRoute
+  '/photos': typeof PhotosRoute
   '/pricing': typeof PricingRoute
   '/reminders': typeof RemindersRoute
   '/settings': typeof SettingsRoute
@@ -85,9 +99,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/analytics': typeof AnalyticsRoute
   '/habits': typeof HabitsRoute
   '/onboarding': typeof OnboardingRoute
+  '/photos': typeof PhotosRoute
   '/pricing': typeof PricingRoute
   '/reminders': typeof RemindersRoute
   '/settings': typeof SettingsRoute
@@ -98,9 +114,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/analytics': typeof AnalyticsRoute
   '/habits': typeof HabitsRoute
   '/onboarding': typeof OnboardingRoute
+  '/photos': typeof PhotosRoute
   '/pricing': typeof PricingRoute
   '/reminders': typeof RemindersRoute
   '/settings': typeof SettingsRoute
@@ -112,9 +130,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
     | '/analytics'
     | '/habits'
     | '/onboarding'
+    | '/photos'
     | '/pricing'
     | '/reminders'
     | '/settings'
@@ -124,9 +144,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account'
     | '/analytics'
     | '/habits'
     | '/onboarding'
+    | '/photos'
     | '/pricing'
     | '/reminders'
     | '/settings'
@@ -136,9 +158,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/account'
     | '/analytics'
     | '/habits'
     | '/onboarding'
+    | '/photos'
     | '/pricing'
     | '/reminders'
     | '/settings'
@@ -149,9 +173,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
   AnalyticsRoute: typeof AnalyticsRoute
   HabitsRoute: typeof HabitsRoute
   OnboardingRoute: typeof OnboardingRoute
+  PhotosRoute: typeof PhotosRoute
   PricingRoute: typeof PricingRoute
   RemindersRoute: typeof RemindersRoute
   SettingsRoute: typeof SettingsRoute
@@ -204,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/photos': {
+      id: '/photos'
+      path: '/photos'
+      fullPath: '/photos'
+      preLoaderRoute: typeof PhotosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
@@ -225,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -237,9 +277,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
   AnalyticsRoute: AnalyticsRoute,
   HabitsRoute: HabitsRoute,
   OnboardingRoute: OnboardingRoute,
+  PhotosRoute: PhotosRoute,
   PricingRoute: PricingRoute,
   RemindersRoute: RemindersRoute,
   SettingsRoute: SettingsRoute,

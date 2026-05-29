@@ -72,7 +72,7 @@ function HabitsPage() {
               setEditing(null);
               setOpen(true);
             }}
-            className="bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium hover:shadow-glow transition-all"
+            className="bg-primary text-primary-foreground px-4 sm:px-5 py-2.5 rounded-full text-sm font-medium hover:shadow-glow transition-all whitespace-nowrap"
           >
             + New habit
           </button>

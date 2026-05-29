@@ -5,21 +5,24 @@ import { useReminderEngine } from "@/lib/reminders";
 import { CommandPalette } from "@/components/command-palette";
 import { PremiumPromptModal } from "@/components/premium-prompt";
 import { resolveTheme, toggleTheme, useThemeSync } from "@/lib/theme";
+import { displayNameOf, useAuth } from "@/lib/auth";
 
 const NAV = [
   { to: "/", label: "Home", icon: "✦" },
   { to: "/habits", label: "Habits", icon: "◎" },
   { to: "/analytics", label: "Analytics", icon: "▢" },
   { to: "/wellness", label: "Wellness", icon: "♡" },
+  { to: "/photos", label: "Photos", icon: "📷" },
   { to: "/timer", label: "Timer", icon: "⏱" },
   { to: "/pricing", label: "Pro", icon: "💎" },
+  { to: "/account", label: "Account", icon: "◐" },
   { to: "/settings", label: "Settings", icon: "⚙" },
 ] as const;
 
 const MOBILE_NAV = [
   { to: "/", label: "Home", icon: "✦" },
   { to: "/habits", label: "Habits", icon: "◎" },
-  { to: "/analytics", label: "Stats", icon: "▢" },
+  { to: "/photos", label: "Photos", icon: "📷" },
   { to: "/wellness", label: "You", icon: "♡" },
   { to: "/settings", label: "More", icon: "≡" },
 ] as const;
@@ -28,6 +31,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const loc = useLocation();
   const navigate = useNavigate();
   const db = useDb();
+  const auth = useAuth();
   useReminderEngine(db);
   useThemeSync(db.profile.theme);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -35,16 +39,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const topStreak = db.habits.map((h) => streakFor(db, h.id)).reduce((a, b) => Math.max(a, b), 0);
 
   useEffect(() => {
-    if (
-      !db.profile.onboardingCompleted &&
-      loc.pathname !== "/splash" &&
-      loc.pathname !== "/onboarding"
-    ) {
+    const allowed = new Set(["/splash", "/onboarding", "/account"]);
+    if (!db.profile.onboardingCompleted && !allowed.has(loc.pathname)) {
       void navigate({ to: "/splash" });
     }
   }, [db.profile.onboardingCompleted, loc.pathname, navigate]);
 
-  // Weekly premium nudge — auto opens once a week for free users (not while already on /pricing).
   useEffect(() => {
     if (loc.pathname === "/pricing") return;
     if (!shouldShowWeeklyPremiumPrompt(db)) return;
@@ -68,6 +68,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const themeResolved = resolveTheme(db.profile.theme);
   const onToggleTheme = () => toggleTheme(db.profile.theme);
+  const accountInitial = (displayNameOf(auth.user) || auth.user?.email || db.profile.name || "?")
+    .slice(0, 1)
+    .toUpperCase();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -82,7 +85,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <ThemeToggle resolved={themeResolved} onClick={onToggleTheme} />
           </div>
 
-          <nav className="flex flex-col gap-1 flex-1">
+          <nav className="flex flex-col gap-1 flex-1 overflow-y-auto -mx-1 px-1">
             {NAV.map((item) => {
               const active =
                 item.to === "/" ? loc.pathname === "/" : loc.pathname.startsWith(item.to);
@@ -140,15 +143,33 @@ export function AppShell({ children }: { children: ReactNode }) {
         </aside>
 
         {/* Main */}
-        <main className="flex-1 min-w-0 px-4 py-6 lg:px-0 lg:py-0 pb-32 lg:pb-0">
+        <main className="flex-1 min-w-0 px-4 py-5 sm:py-6 lg:px-0 lg:py-0 pb-28 lg:pb-0">
           {/* Mobile top bar */}
-          <div className="lg:hidden flex items-center justify-between mb-5">
-            <Link to="/" className="flex items-center gap-2">
-              <span className="size-2 rounded-full bg-primary animate-pulse" />
-              <span className="font-display font-extrabold text-base tracking-tight">Grovv</span>
+          <div className="lg:hidden flex items-center justify-between mb-5 gap-2">
+            <Link to="/" className="flex items-center gap-2 min-w-0">
+              <span className="size-2 rounded-full bg-primary animate-pulse shrink-0" />
+              <span className="font-display font-extrabold text-base tracking-tight truncate">
+                Grovv
+              </span>
             </Link>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 shrink-0">
               <ThemeToggle resolved={themeResolved} onClick={onToggleTheme} />
+              <Link
+                to="/account"
+                aria-label={auth.user ? "Account" : "Sign in"}
+                title={auth.user ? displayNameOf(auth.user) || "Account" : "Sign in"}
+                className={
+                  "relative size-9 grid place-items-center rounded-full border transition-colors " +
+                  (auth.user
+                    ? "border-[color:var(--success)]/50 bg-[color:var(--success)]/10 text-[color:var(--success)] font-display font-bold text-sm"
+                    : "border-border bg-[var(--surface)] text-muted-foreground hover:border-primary/40")
+                }
+              >
+                {auth.user ? accountInitial : "◐"}
+                {!auth.user && (
+                  <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-[color:var(--warning)]" />
+                )}
+              </Link>
               <button
                 type="button"
                 onClick={() => setPaletteOpen(true)}
@@ -165,8 +186,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Mobile bottom nav */}
       <nav
-        className="lg:hidden fixed bottom-3 left-3 right-3 z-50 rounded-2xl border border-border bg-[var(--surface)]/95 backdrop-blur-xl px-2 py-1.5 flex justify-around shadow-[0_8px_30px_rgba(0,0,0,0.08)]"
-        style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.375rem)" }}
+        className="lg:hidden fixed bottom-2 left-2 right-2 z-50 rounded-2xl border border-border bg-[var(--surface)]/95 backdrop-blur-xl px-1 py-1 flex justify-around shadow-[0_8px_30px_rgba(0,0,0,0.08)]"
+        style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.25rem)" }}
       >
         {MOBILE_NAV.map((item) => {
           const active = item.to === "/" ? loc.pathname === "/" : loc.pathname.startsWith(item.to);
@@ -175,14 +196,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               key={item.to}
               to={item.to}
               className={
-                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[0.65rem] transition-all flex-1 " +
+                "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-[0.6rem] transition-all flex-1 min-w-0 " +
                 (active
-                  ? "text-foreground bg-[var(--surface-2)] scale-105"
-                  : "text-muted-foreground")
+                  ? "text-foreground bg-[var(--surface-2)]"
+                  : "text-muted-foreground active:bg-[var(--surface-2)]/60")
               }
             >
               <span className="text-base leading-none">{item.icon}</span>
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium truncate w-full text-center">{item.label}</span>
             </Link>
           );
         })}
@@ -205,7 +226,6 @@ function ThemeToggle({ resolved, onClick }: { resolved: "light" | "dark"; onClic
       className="rounded-full border border-border bg-[var(--surface)] size-9 grid place-items-center hover:border-primary/40 hover:bg-[var(--surface-2)] transition-colors"
     >
       {isDark ? (
-        // Sun icon
         <svg
           width="18"
           height="18"
@@ -228,7 +248,6 @@ function ThemeToggle({ resolved, onClick }: { resolved: "light" | "dark"; onClic
           <path d="m17.66 6.34 1.41-1.41" />
         </svg>
       ) : (
-        // Moon icon
         <svg
           width="18"
           height="18"
@@ -259,19 +278,19 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex items-end justify-between gap-4 flex-wrap mb-6 lg:mb-8">
-      <div>
+    <div className="flex items-start justify-between gap-3 flex-wrap mb-5 lg:mb-8">
+      <div className="min-w-0 flex-1">
         {eyebrow && (
-          <p className="text-[0.7rem] font-medium tracking-[0.14em] uppercase text-primary mb-2">
+          <p className="text-[0.65rem] sm:text-[0.7rem] font-medium tracking-[0.14em] uppercase text-primary mb-1.5 sm:mb-2">
             {eyebrow}
           </p>
         )}
-        <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">
+        <h1 className="font-display text-[1.7rem] leading-tight sm:text-3xl lg:text-4xl font-bold">
           {title}
         </h1>
         {subtitle && <p className="text-sm text-muted-foreground mt-2 max-w-xl">{subtitle}</p>}
       </div>
-      {actions && <div className="flex gap-2">{actions}</div>}
+      {actions && <div className="flex gap-2 flex-wrap">{actions}</div>}
     </div>
   );
 }

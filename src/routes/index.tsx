@@ -334,7 +334,7 @@ function TodayPage() {
                     aria-label={`Log mood ${m.v}`}
                     aria-pressed={active}
                     className={
-                      "flex-1 aspect-square rounded-xl text-2xl grid place-items-center transition-all border " +
+                      "flex-1 aspect-square rounded-xl text-xl sm:text-2xl grid place-items-center transition-all border min-w-0 " +
                       (active
                         ? "bg-[color:var(--warning)]/15 border-[color:var(--warning)]/50 scale-105"
                         : "bg-[var(--surface-2)] border-border hover:border-[color:var(--primary)]/40")
