@@ -10,7 +10,10 @@ import {
   streakFor,
   bestStreakFor,
   habitColor,
+  recoverableFreezeDate,
+  useFreeze as applyFreeze,
   type Habit,
+  type HabitDb,
   type HabitFrequency,
 } from "@/lib/habits";
 
@@ -143,6 +146,7 @@ function HabitsPage() {
                     <Stat label="Current" value={`${streakFor(db, h.id)}d`} />
                     <Stat label="Best" value={`${bestStreakFor(db, h.id)}d`} />
                   </div>
+                  <FreezeAction db={db} habitId={h.id} />
                 </div>
               </div>
             );
@@ -175,6 +179,55 @@ function HabitsPage() {
         />
       )}
     </AppShell>
+  );
+}
+
+function relativeDayLabel(key: string): string {
+  const [y, m, d] = key.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.round((startOfToday.getTime() - date.getTime()) / 86400000);
+  if (diff === 1) return "yesterday";
+  if (diff <= 6) return date.toLocaleDateString(undefined, { weekday: "long" });
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function FreezeAction({ db, habitId }: { db: HabitDb; habitId: string }) {
+  if (db.profile.vacationActive) {
+    return (
+      <p className="mt-3 flex items-center gap-1 text-[0.7rem] text-muted-foreground">
+        <span aria-hidden>🏝</span> Vacation mode is keeping this streak safe.
+      </p>
+    );
+  }
+
+  const gapKey = recoverableFreezeDate(db, habitId);
+  if (!gapKey) return null;
+
+  const label = relativeDayLabel(gapKey);
+  const balance = db.profile.freezeBalance;
+
+  if (balance <= 0) {
+    return (
+      <p className="mt-3 text-[0.7rem] text-muted-foreground">
+        Missed {label} · no streak freezes left this month.
+      </p>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        const [y, m, d] = gapKey.split("-").map(Number);
+        applyFreeze(habitId, new Date(y, m - 1, d));
+      }}
+      className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-primary/20"
+    >
+      <span aria-hidden>🧊</span> Save streak — freeze {label}
+      <span className="text-muted-foreground">· {balance} left</span>
+    </button>
   );
 }
 

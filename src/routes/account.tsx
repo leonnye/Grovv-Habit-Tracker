@@ -10,7 +10,7 @@ import {
   useAuth,
 } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase";
-import { updateProfile, useDb, useMounted } from "@/lib/habits";
+import { isPremium, updateProfile, useDb, useMounted } from "@/lib/habits";
 
 export const Route = createFileRoute("/account")({ component: AccountPage });
 
@@ -100,6 +100,8 @@ function AccountPage() {
             <SignedInPanel
               email={auth.user?.email ?? ""}
               name={displayNameOf(auth.user)}
+              pro={isPremium(db)}
+              approved={db.profile.cloudPremium}
               onSignOut={async () => {
                 setBusy(true);
                 try {
@@ -262,11 +264,15 @@ function ModeSwitcher({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => voi
 function SignedInPanel({
   email,
   name,
+  pro,
+  approved,
   onSignOut,
   busy,
 }: {
   email: string;
   name: string;
+  pro: boolean;
+  approved: boolean;
   onSignOut: () => void;
   busy: boolean;
 }) {
@@ -280,7 +286,22 @@ function SignedInPanel({
           <p className="font-display text-base font-semibold truncate">{name || "Signed in"}</p>
           <p className="text-xs text-muted-foreground truncate">{email}</p>
         </div>
+        {pro && (
+          <span className="ml-auto shrink-0 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-primary">
+            💎 Pro
+          </span>
+        )}
       </div>
+      {approved ? (
+        <div className="mb-3 rounded-xl border border-primary/30 bg-primary/8 p-3 text-sm">
+          Pro access is active on this account — thanks for being here.
+        </div>
+      ) : (
+        <div className="mb-3 rounded-xl border border-border bg-[var(--surface-2)] p-3 text-xs text-muted-foreground">
+          Want Pro? Send us this email ({email}) and we'll approve it. Pro then unlocks
+          automatically here.
+        </div>
+      )}
       <div className="rounded-xl border border-[color:var(--success)]/30 bg-[color:var(--success)]/10 p-3 text-sm text-foreground">
         Cloud sync is on. Upload progress photos from the{" "}
         <Link to="/photos" className="font-semibold underline">

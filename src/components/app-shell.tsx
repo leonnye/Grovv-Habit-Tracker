@@ -6,6 +6,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { PremiumPromptModal } from "@/components/premium-prompt";
 import { resolveTheme, toggleTheme, useThemeSync } from "@/lib/theme";
 import { displayNameOf, useAuth } from "@/lib/auth";
+import { usePremiumApprovalSync } from "@/lib/premium";
 
 const NAV = [
   { to: "/", label: "Home", icon: "✦" },
@@ -34,6 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const auth = useAuth();
   useReminderEngine(db);
   useThemeSync(db.profile.theme);
+  usePremiumApprovalSync();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
   const topStreak = db.habits.map((h) => streakFor(db, h.id)).reduce((a, b) => Math.max(a, b), 0);
@@ -145,7 +147,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Main */}
         <main className="flex-1 min-w-0 px-4 py-5 sm:py-6 lg:px-0 lg:py-0 pb-28 lg:pb-0">
           {/* Mobile top bar */}
-          <div className="lg:hidden flex items-center justify-between mb-5 gap-2">
+          <div
+            className="lg:hidden flex items-center justify-between mb-5 gap-2"
+            style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+          >
             <Link to="/" className="flex items-center gap-2 min-w-0">
               <span className="size-2 rounded-full bg-primary animate-pulse shrink-0" />
               <span className="font-display font-extrabold text-base tracking-tight truncate">

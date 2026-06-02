@@ -53,6 +53,7 @@ export type UserProfile = {
   adaptiveReminders: boolean;
   theme: ThemePreference;
   lastPremiumPromptAt: string | null; // ISO — when we last showed the weekly upgrade modal
+  cloudPremium: boolean; // Pro granted by email approval in Supabase (payment stays off)
 };
 
 export type HabitDb = {
@@ -115,6 +116,7 @@ export function defaultProfile(): UserProfile {
     adaptiveReminders: false,
     theme: "system",
     lastPremiumPromptAt: null,
+    cloudPremium: false,
   };
 }
 
@@ -192,6 +194,7 @@ function sanitizeProfile(input: unknown): UserProfile {
       typeof input.lastPremiumPromptAt === "string" && input.lastPremiumPromptAt
         ? input.lastPremiumPromptAt
         : null,
+    cloudPremium: Boolean(input.cloudPremium),
   };
 }
 
@@ -600,6 +603,32 @@ export function clearFreeze(habitId: string, date: Date) {
   });
 }
 
+/**
+ * The most recent past due day (excluding today) that broke the streak and
+ * could be rescued with a freeze, or null when there's nothing to protect.
+ * Used to surface a "save your streak" action on each habit.
+ */
+export function recoverableFreezeDate(
+  db: HabitDb,
+  habitId: string,
+  today = new Date(),
+): string | null {
+  if (db.profile.vacationActive) return null;
+  const habit = db.habits.find((h) => h.id === habitId);
+  if (!habit) return null;
+  const set = new Set(db.checkins[habitId] ?? []);
+  const frozen = new Set(db.freezesUsed[habitId] ?? []);
+  for (let i = 1; i <= 7; i++) {
+    const d = addDays(today, -i);
+    if (!isHabitDueToday(habit, d)) continue;
+    const key = ymd(d);
+    if (set.has(key)) return null; // most recent due day was completed — no gap
+    if (frozen.has(key)) return null; // already protected
+    return key; // most recent missed due day — this is the gap to freeze
+  }
+  return null;
+}
+
 export function importDbSnapshot(snapshotJson: string) {
   commit(parseImportSnapshot(snapshotJson));
 }
@@ -612,6 +641,7 @@ export function resetDb() {
 
 export function isPremium(db: HabitDb, days = 7) {
   if (db.profile.plan !== "free") return true;
+  if (db.profile.cloudPremium) return true;
   return trialDaysLeft(db, days) > 0;
 }
 

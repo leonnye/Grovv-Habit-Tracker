@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell, PageHeader } from "@/components/app-shell";
 import {
@@ -137,7 +137,8 @@ function PricingPage() {
       </div>
 
       <p className="mt-3 text-center text-[0.65rem] text-muted-foreground">
-        Paystack checkout is wired in code, but disabled until launch — no charge happens yet.
+        Paid checkout is disabled for now. Pro is granted manually — sign in with your email and
+        ask us to approve it, and Pro unlocks automatically on this device.
       </p>
 
       <div className="mt-6 rounded-2xl border border-border bg-[var(--surface)] p-5 sm:p-6">
@@ -175,15 +176,21 @@ function PricingPage() {
         </section>
 
         <section className="rounded-2xl border border-border bg-[var(--surface)] p-5">
-          <h3 className="font-display text-lg">How payment works</h3>
+          <h3 className="font-display text-lg">How to get Pro right now</h3>
           <ol className="mt-2 list-decimal list-inside text-sm text-muted-foreground space-y-1">
-            <li>You enter an email + click Choose plan.</li>
-            <li>Paystack opens its secure modal (card, bank, transfer).</li>
-            <li>Our server verifies the reference with Paystack.</li>
-            <li>Your account is upgraded and synced back to this device.</li>
+            <li>
+              Create an account or sign in from the{" "}
+              <Link to="/account" className="font-semibold text-primary">
+                Account
+              </Link>{" "}
+              page.
+            </li>
+            <li>Send us the email you signed in with so we can approve it.</li>
+            <li>Once approved, Pro unlocks automatically — no payment needed.</li>
+            <li>Sign in with that email on any device to carry Pro with you.</li>
           </ol>
           <p className="mt-3 text-xs text-muted-foreground">
-            Email is used for receipts and for restoring Pro on a new device.
+            Paid plans above are coming soon. Approval is how access is granted today.
           </p>
         </section>
       </div>
@@ -293,11 +300,11 @@ function UpgradeModal({
         aria-modal="true"
         className="w-full max-w-md rounded-3xl border border-border bg-[var(--surface)] p-6"
       >
-        <p className="text-xs uppercase tracking-[0.14em] text-primary">Upgrade · {planLabel}</p>
-        <h3 className="mt-2 font-display text-2xl font-bold">One last step before checkout</h3>
+        <p className="text-xs uppercase tracking-[0.14em] text-primary">Pro · {planLabel}</p>
+        <h3 className="mt-2 font-display text-2xl font-bold">Request Pro access</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          Enter the email Paystack should attach to this purchase. Receipts go here, and you'll use
-          it to restore Pro on other devices.
+          Enter the email you sign in with. Send it to us and we'll approve it — Pro then unlocks
+          automatically wherever you're signed in with that email.
         </p>
         <input
           autoFocus
@@ -305,11 +312,11 @@ function UpgradeModal({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@email.com"
-          className="mt-4 w-full rounded-xl border border-border bg-[var(--surface-2)] px-4 py-3 text-sm focus:outline-none focus:border-primary/60"
+          className="mt-4 w-full rounded-xl border border-border bg-[var(--surface-2)] px-4 py-3 text-base sm:text-sm focus:outline-none focus:border-primary/60"
         />
         <div className="mt-4 rounded-xl border border-border bg-[var(--surface-2)] p-3 text-xs text-muted-foreground">
-          Paystack checkout is intentionally disabled in this build. Email is saved locally so the
-          flow is testable.
+          Paid checkout is disabled for now. Your email is saved on this device so you can copy it
+          when requesting access.
         </div>
         <div className="mt-5 flex gap-2">
           <button
@@ -325,7 +332,7 @@ function UpgradeModal({
             onClick={onSubmit}
             className="flex-1 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            Save email
+            Save my email
           </button>
         </div>
       </div>
