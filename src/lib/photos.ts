@@ -1,4 +1,4 @@
-import { getSupabase, PHOTOS_BUCKET, type PhotoRow } from "./supabase";
+import { getSupabase, initSupabase, PHOTOS_BUCKET, type PhotoRow } from "./supabase";
 
 export type PhotoWithUrl = PhotoRow & { signedUrl: string };
 
@@ -12,6 +12,10 @@ export type UploadPhotoArgs = {
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic"]);
 
 const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8MB
+
+async function supabaseClient() {
+  return (await initSupabase()) ?? getSupabase();
+}
 
 function extFromFile(file: File): string {
   const fromName = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
@@ -30,7 +34,7 @@ export async function uploadPhoto({
   habitId,
   loggedOn,
 }: UploadPhotoArgs): Promise<PhotoRow> {
-  const sb = getSupabase();
+  const sb = await supabaseClient();
   if (!sb) throw new Error("Cloud sync is not configured.");
   const { data: sessionData } = await sb.auth.getSession();
   const user = sessionData.session?.user;
@@ -74,7 +78,7 @@ export async function uploadPhoto({
 }
 
 export async function listPhotos(): Promise<PhotoWithUrl[]> {
-  const sb = getSupabase();
+  const sb = await supabaseClient();
   if (!sb) return [];
   const { data: sessionData } = await sb.auth.getSession();
   if (!sessionData.session?.user) return [];
@@ -105,7 +109,7 @@ export async function listPhotos(): Promise<PhotoWithUrl[]> {
 }
 
 export async function deletePhoto(photo: Pick<PhotoRow, "id" | "storage_path">): Promise<void> {
-  const sb = getSupabase();
+  const sb = await supabaseClient();
   if (!sb) throw new Error("Cloud sync is not configured.");
   await sb.storage.from(PHOTOS_BUCKET).remove([photo.storage_path]);
   const { error } = await sb.from("photos").delete().eq("id", photo.id);

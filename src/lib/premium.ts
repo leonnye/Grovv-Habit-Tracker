@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { getSupabase } from "./supabase";
+import { getSupabase, initSupabase } from "./supabase";
 import { useAuth } from "./auth";
 import { updateProfile, useDb } from "./habits";
 
@@ -16,7 +16,7 @@ import { updateProfile, useDb } from "./habits";
 export async function checkPremiumApproval(
   email: string | null | undefined,
 ): Promise<boolean | null> {
-  const sb = getSupabase();
+  const sb = (await initSupabase()) ?? getSupabase();
   if (!sb || !email) return null;
   const { data, error } = await sb
     .from("premium_access")

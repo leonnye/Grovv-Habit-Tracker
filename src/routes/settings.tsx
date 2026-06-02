@@ -279,8 +279,8 @@ function SettingsPage() {
           desc={
             cloudConfigured
               ? auth.user
-                ? "You're signed in. Progress photos sync to your private account."
-                : "Sign in to back up data and use the photo gallery — totally optional."
+                ? "You're signed in. Habits, wellness, journal, and photos sync to your account."
+                : "Sign in to back up everything and pick up where you left off on any device — optional."
               : "Local-only mode. Cloud sync isn't configured in this build."
           }
         >

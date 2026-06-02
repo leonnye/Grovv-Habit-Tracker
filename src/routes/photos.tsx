@@ -123,7 +123,7 @@ function PhotosPage() {
       ) : !auth.user ? (
         <NoticeCard
           title="Sign in to use Photos"
-          body="Photos are stored in your private account so they sync across devices. You can keep using the rest of Grovv without signing in."
+          body="Sign in to back up habits, wellness, and journal everywhere — and store progress photos in your private gallery."
           cta={
             <Link
               to="/account"

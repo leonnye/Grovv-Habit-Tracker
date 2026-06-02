@@ -6,6 +6,10 @@ import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
+  // Keep Supabase out of the SSR bundle so Netlify cold starts stay fast.
+  ssr: {
+    external: ["@supabase/supabase-js"],
+  },
   plugins: [
     // Netlify's TanStack Start adapter must run before tanstackStart().
     // It emits the SSR handler to .netlify/v1/functions/server.mjs so the

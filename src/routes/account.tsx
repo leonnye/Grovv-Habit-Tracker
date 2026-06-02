@@ -76,7 +76,7 @@ function AccountPage() {
             Your <span className="text-gradient">space</span>, your call
           </>
         }
-        subtitle="Sign in to back up habits and sync progress photos across devices. It's completely optional — Grovv works fully offline."
+        subtitle="Sign in to back up habits, wellness, journal, and progress photos — then pick up where you left off on any device. Totally optional; Grovv works fully offline."
       />
 
       {!configured && (
@@ -220,13 +220,16 @@ function AccountPage() {
           <Card title="Why sign in?">
             <ul className="text-xs sm:text-sm text-muted-foreground space-y-2">
               <li className="flex gap-2">
-                <span aria-hidden>📸</span> Upload progress photos to a private gallery
+                <span aria-hidden>◎</span> Habits, check-ins, and streaks sync to your account
               </li>
               <li className="flex gap-2">
-                <span aria-hidden>☁️</span> Back up data so you don't lose it
+                <span aria-hidden>♡</span> Wellness logs and journal entries come with you
               </li>
               <li className="flex gap-2">
-                <span aria-hidden>🔁</span> Sync across phone, tablet, and desktop
+                <span aria-hidden>📸</span> Progress photos in a private cloud gallery
+              </li>
+              <li className="flex gap-2">
+                <span aria-hidden>🔁</span> Sign in on another device and continue where you left off
               </li>
             </ul>
           </Card>
@@ -303,11 +306,12 @@ function SignedInPanel({
         </div>
       )}
       <div className="rounded-xl border border-[color:var(--success)]/30 bg-[color:var(--success)]/10 p-3 text-sm text-foreground">
-        Cloud sync is on. Upload progress photos from the{" "}
+        Cloud sync is on. Your habits, wellness, journal, and photos stay backed up while you're
+        signed in. Open{" "}
         <Link to="/photos" className="font-semibold underline">
           Photos
         </Link>{" "}
-        tab.
+        to upload progress shots.
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <Link

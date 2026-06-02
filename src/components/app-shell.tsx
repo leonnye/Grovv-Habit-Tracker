@@ -7,6 +7,8 @@ import { PremiumPromptModal } from "@/components/premium-prompt";
 import { resolveTheme, toggleTheme, useThemeSync } from "@/lib/theme";
 import { displayNameOf, useAuth } from "@/lib/auth";
 import { usePremiumApprovalSync } from "@/lib/premium";
+import { useCloudSync } from "@/lib/sync";
+import { initSupabase } from "@/lib/supabase";
 
 const NAV = [
   { to: "/", label: "Home", icon: "✦" },
@@ -36,6 +38,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   useReminderEngine(db);
   useThemeSync(db.profile.theme);
   usePremiumApprovalSync();
+  useCloudSync();
+
+  useEffect(() => {
+    void initSupabase();
+  }, []);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
   const topStreak = db.habits.map((h) => streakFor(db, h.id)).reduce((a, b) => Math.max(a, b), 0);

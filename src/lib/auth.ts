@@ -1,6 +1,6 @@
 import type { Session, User } from "@supabase/supabase-js";
 import { useSyncExternalStore } from "react";
-import { getSupabase, isSupabaseConfigured } from "./supabase";
+import { getSupabase, initSupabase, isSupabaseConfigured } from "./supabase";
 
 /**
  * Tiny auth store. Sign-in is optional — when Supabase isn't configured
@@ -35,25 +35,31 @@ function setState(next: Partial<AuthState>) {
 
 function ensureSubscribed() {
   if (initialized || typeof window === "undefined") return;
-  const sb = getSupabase();
-  if (!sb) {
-    initialized = true;
+  initialized = true;
+
+  if (!isSupabaseConfigured()) {
     setState({ status: "ready" });
     return;
   }
-  initialized = true;
-  void sb.auth.getSession().then(({ data }) => {
-    setState({
-      status: "ready",
-      session: data.session ?? null,
-      user: data.session?.user ?? null,
+
+  void initSupabase().then((sb) => {
+    if (!sb) {
+      setState({ status: "ready" });
+      return;
+    }
+    void sb.auth.getSession().then(({ data }) => {
+      setState({
+        status: "ready",
+        session: data.session ?? null,
+        user: data.session?.user ?? null,
+      });
     });
-  });
-  sb.auth.onAuthStateChange((_event, session) => {
-    setState({
-      status: "ready",
-      session: session ?? null,
-      user: session?.user ?? null,
+    sb.auth.onAuthStateChange((_event, session) => {
+      setState({
+        status: "ready",
+        session: session ?? null,
+        user: session?.user ?? null,
+      });
     });
   });
 }
@@ -74,12 +80,16 @@ export function useAuth(): AuthState {
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 
+async function clientSupabase() {
+  return (await initSupabase()) ?? getSupabase();
+}
+
 export async function signUpWithEmail(
   email: string,
   password: string,
   name?: string,
 ): Promise<AuthResult> {
-  const sb = getSupabase();
+  const sb = await clientSupabase();
   if (!sb) return { ok: false, error: "Cloud sync isn't configured for this build." };
   const { error } = await sb.auth.signUp({
     email,
@@ -93,7 +103,7 @@ export async function signUpWithEmail(
 }
 
 export async function signInWithEmail(email: string, password: string): Promise<AuthResult> {
-  const sb = getSupabase();
+  const sb = await clientSupabase();
   if (!sb) return { ok: false, error: "Cloud sync isn't configured for this build." };
   const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) return { ok: false, error: error.message };
@@ -101,7 +111,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
 }
 
 export async function sendMagicLink(email: string): Promise<AuthResult> {
-  const sb = getSupabase();
+  const sb = await clientSupabase();
   if (!sb) return { ok: false, error: "Cloud sync isn't configured for this build." };
   const { error } = await sb.auth.signInWithOtp({
     email,
@@ -114,7 +124,7 @@ export async function sendMagicLink(email: string): Promise<AuthResult> {
 }
 
 export async function signOut(): Promise<void> {
-  const sb = getSupabase();
+  const sb = await clientSupabase();
   if (!sb) return;
   await sb.auth.signOut();
 }

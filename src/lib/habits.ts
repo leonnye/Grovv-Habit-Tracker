@@ -69,6 +69,7 @@ export type HabitDb = {
 type PersistedDbV6 = HabitDb & { version: 6 };
 
 const KEY = "grovv.db.v6";
+const SYNC_META_KEY = "grovv.sync.meta";
 const LEGACY_KEYS = [
   "grovv.db.v5",
   "grovv.db.v4",
@@ -387,6 +388,9 @@ function loadMemory(): HabitDb {
     };
   }
   writeStorage(memory);
+  if (!readSyncMeta() && hasUserData(memory)) {
+    writeSyncMeta(new Date().toISOString());
+  }
   return memory;
 }
 
@@ -396,9 +400,61 @@ function writeStorage(db: HabitDb) {
   for (const legacyKey of LEGACY_KEYS) localStorage.removeItem(legacyKey);
 }
 
+type SyncMeta = { lastModifiedAt: string };
+
+function readSyncMeta(): SyncMeta | null {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem(SYNC_META_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as SyncMeta;
+    return typeof parsed.lastModifiedAt === "string" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSyncMeta(lastModifiedAt: string) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(SYNC_META_KEY, JSON.stringify({ lastModifiedAt }));
+}
+
+function touchSyncMeta() {
+  writeSyncMeta(new Date().toISOString());
+}
+
+export function getLocalLastModifiedAt(): string | null {
+  return readSyncMeta()?.lastModifiedAt ?? null;
+}
+
+/** True when the user has meaningful data worth backing up. */
+export function hasUserData(db: HabitDb): boolean {
+  if (db.habits.length > 0) return true;
+  if (Object.values(db.checkins).some((dates) => dates.length > 0)) return true;
+  if (Object.keys(db.wellness).length > 0) return true;
+  if (Object.keys(db.journal).length > 0) return true;
+  if (db.profile.onboardingCompleted) return true;
+  return false;
+}
+
+/** Replace local state from a cloud snapshot without bumping the modified timestamp. */
+export function applyCloudSnapshot(snapshot: unknown, cloudUpdatedAt: string) {
+  const next = migrateDb(snapshot);
+  memory = next;
+  writeStorage(next);
+  writeSyncMeta(cloudUpdatedAt);
+  listeners.forEach((l) => l());
+}
+
+/** Read the current in-memory db (client only). Used by cloud sync. */
+export function getLocalDb(): HabitDb {
+  return loadMemory();
+}
+
 function commit(next: HabitDb) {
   memory = next;
   writeStorage(next);
+  touchSyncMeta();
   listeners.forEach((l) => l());
 }
 

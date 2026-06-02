@@ -4,3 +4,11 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Netlify sync functions cap at 10s (26s on Pro). Smaller SSR bundles + client-only
+# Supabase keep cold starts under that limit.
+[functions.server]
+  timeout = 26
