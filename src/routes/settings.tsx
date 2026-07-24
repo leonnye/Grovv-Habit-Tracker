@@ -14,6 +14,7 @@ import { dbToCsv } from "@/lib/csv";
 import { requestNotificationPermission } from "@/lib/reminders";
 import { displayNameOf, signOut, useAuth } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { usePwaInstall } from "@/lib/pwa";
 
 export const Route = createFileRoute("/settings")({ component: SettingsPage });
 
@@ -22,6 +23,8 @@ function SettingsPage() {
   const mounted = useMounted();
   const auth = useAuth();
   const cloudConfigured = isSupabaseConfigured();
+  const pwa = usePwaInstall();
+  const [installMessage, setInstallMessage] = useState<string | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
@@ -92,6 +95,49 @@ function SettingsPage() {
       />
 
       <div className="grid lg:grid-cols-2 gap-4 max-w-4xl">
+        <Card
+          title="Install Grovv"
+          desc="Add Grovv to your home screen or desktop — works offline for your local habits and opens like a real app."
+        >
+          <div className="w-full space-y-3">
+            {pwa.installed ? (
+              <p className="text-sm text-[color:var(--success)]">
+                You&apos;re using the installed app. Nice.
+              </p>
+            ) : pwa.canInstall ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  const outcome = await pwa.install();
+                  if (outcome === "accepted") setInstallMessage("Grovv is installing…");
+                  else if (outcome === "dismissed") setInstallMessage("Install dismissed — you can try again anytime.");
+                  else setInstallMessage("Install isn't available in this browser right now.");
+                }}
+                className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+              >
+                Download / Install app
+              </button>
+            ) : pwa.isIos ? (
+              <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
+                <li>
+                  Tap the <strong className="text-foreground">Share</strong> button in Safari
+                </li>
+                <li>
+                  Choose <strong className="text-foreground">Add to Home Screen</strong>
+                </li>
+                <li>Tap Add — Grovv appears like an app</li>
+              </ol>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                On desktop Chrome/Edge: open the browser menu → <strong className="text-foreground">Install Grovv</strong>
+                {" "}(or the install icon in the address bar). On Android Chrome: menu →{" "}
+                <strong className="text-foreground">Install app</strong> / Add to Home screen.
+              </p>
+            )}
+            {installMessage && <p className="text-xs text-muted-foreground">{installMessage}</p>}
+          </div>
+        </Card>
+
         {/* Profile */}
         <Card title="Profile" desc="Personalize your greeting and identity statement.">
           <div className="w-full grid gap-3">

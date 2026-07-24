@@ -1,4 +1,5 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { BOOT_SCRIPT } from "@/lib/boot-script";
@@ -62,7 +63,9 @@ export const Route = createRootRoute({
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
-      { rel: "apple-touch-icon", href: "/icon.svg" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "icon", href: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { rel: "icon", href: "/icon-512.png", sizes: "512x512", type: "image/png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -95,5 +98,13 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  // Mark the app alive even on routes that don't use AppShell (splash/onboarding).
+  useEffect(() => {
+    (window as Window & { __GROVV_ALIVE__?: number }).__GROVV_ALIVE__ = 1;
+    document.getElementById("grovv-boot-rescue")?.remove();
+    // Ensure the installable worker is registered even before AppShell mounts.
+    void import("@/lib/pwa").then((m) => m.registerPwa());
+  }, []);
+
   return <Outlet />;
 }

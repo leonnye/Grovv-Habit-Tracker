@@ -11,6 +11,7 @@ import {
 } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { updateProfile, useDb, useMounted } from "@/lib/habits";
+import { backupNow, restoreFromCloud, useSyncStatus } from "@/lib/sync";
 
 export const Route = createFileRoute("/account")({ component: AccountPage });
 
@@ -99,7 +100,10 @@ function AccountPage() {
           {signedIn ? (
             <SignedInPanel
               email={auth.user?.email ?? ""}
-              name={displayNameOf(auth.user)}
+              name={displayNameOf(auth.user) || db.profile.name}
+              userId={auth.user?.id ?? ""}
+              habitCount={db.habits.length}
+              profileName={db.profile.name}
               onSignOut={async () => {
                 setBusy(true);
                 try {
@@ -252,14 +256,33 @@ function ModeSwitcher({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => voi
 function SignedInPanel({
   email,
   name,
+  userId,
+  habitCount,
+  profileName,
   onSignOut,
   busy,
 }: {
   email: string;
   name: string;
+  userId: string;
+  habitCount: number;
+  profileName: string;
   onSignOut: () => void;
   busy: boolean;
 }) {
+  const sync = useSyncStatus();
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
+
+  const syncLabel =
+    sync.state === "syncing"
+      ? sync.detail || "Syncing…"
+      : sync.state === "error"
+        ? `Sync error: ${sync.message}`
+        : sync.state === "ok"
+          ? `Synced · ${sync.habits} habit${sync.habits === 1 ? "" : "s"} · ${sync.name}`
+          : "Waiting to sync…";
+
   return (
     <div>
       <div className="flex items-center gap-3 mb-4">
@@ -267,18 +290,69 @@ function SignedInPanel({
           {(name || email || "?").slice(0, 1).toUpperCase()}
         </div>
         <div className="min-w-0">
-          <p className="font-display text-base font-semibold truncate">{name || "Signed in"}</p>
+          <p className="font-display text-base font-semibold truncate">
+            {profileName || name || "Signed in"}
+          </p>
           <p className="text-xs text-muted-foreground truncate">{email}</p>
         </div>
       </div>
-      <div className="rounded-xl border border-[color:var(--success)]/30 bg-[color:var(--success)]/10 p-3 text-sm text-foreground">
-        Cloud sync is on. Your habits, wellness, journal, and photos stay backed up while you're
-        signed in. Open{" "}
-        <Link to="/photos" className="font-semibold underline">
-          Photos
-        </Link>{" "}
-        to upload progress shots.
+
+      <div
+        className={
+          "rounded-xl border p-3 text-sm " +
+          (sync.state === "error"
+            ? "border-[color:var(--destructive)]/30 bg-[color:var(--destructive)]/10"
+            : "border-[color:var(--success)]/30 bg-[color:var(--success)]/10")
+        }
+      >
+        <p className="font-semibold">{syncLabel}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          On this device now: <strong className="text-foreground">{habitCount}</strong> habit
+          {habitCount === 1 ? "" : "s"}
+          {profileName ? (
+            <>
+              {" "}
+              · name <strong className="text-foreground">{profileName}</strong>
+            </>
+          ) : null}
+          . Data follows the email you sign in with — a different email is a different backup.
+        </p>
       </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={actionBusy || !userId}
+          onClick={() => {
+            setActionMsg(null);
+            setActionBusy(true);
+            void restoreFromCloud(userId).then((res) => {
+              setActionBusy(false);
+              setActionMsg(res.ok ? "Restored from cloud." : res.error || "Restore failed.");
+            });
+          }}
+          className="rounded-full border border-border bg-[var(--surface-2)] px-4 py-2 text-xs font-semibold hover:border-primary/40 transition-colors disabled:opacity-50"
+        >
+          Restore from cloud
+        </button>
+        <button
+          type="button"
+          disabled={actionBusy || !userId}
+          onClick={() => {
+            setActionMsg(null);
+            setActionBusy(true);
+            void backupNow(userId).then((res) => {
+              setActionBusy(false);
+              setActionMsg(res.ok ? "Backup uploaded." : res.error || "Backup failed.");
+            });
+          }}
+          className="rounded-full border border-border bg-[var(--surface-2)] px-4 py-2 text-xs font-semibold hover:border-primary/40 transition-colors disabled:opacity-50"
+        >
+          Backup this device
+        </button>
+      </div>
+      {actionMsg && <p className="mt-2 text-xs text-muted-foreground">{actionMsg}</p>}
+
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
           to="/photos"

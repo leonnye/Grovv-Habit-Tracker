@@ -7,6 +7,7 @@ import { resolveTheme, toggleTheme, useThemeSync } from "@/lib/theme";
 import { displayNameOf, useAuth } from "@/lib/auth";
 import { useCloudSync } from "@/lib/sync";
 import { initSupabase, isSupabaseConfigured } from "@/lib/supabase";
+import { registerPwa } from "@/lib/pwa";
 
 const NAV = [
   { to: "/", label: "Home", icon: "✦" },
@@ -38,6 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void initSupabase();
+    registerPwa();
   }, []);
 
   // Tell the early boot script that React hydrated successfully.
@@ -45,21 +47,14 @@ export function AppShell({ children }: { children: ReactNode }) {
     (window as Window & { __GROVV_ALIVE__?: number }).__GROVV_ALIVE__ = 1;
     const rescue = document.getElementById("grovv-boot-rescue");
     if (rescue) rescue.remove();
-    try {
-      sessionStorage.removeItem("grovv.boot.reload");
-      sessionStorage.removeItem("grovv.chunk-reload");
-    } catch {
-      /* ignore */
-    }
   }, []);
 
-  // Recover from stale deployments: if a lazy-loaded chunk 404s (old HTML
-  // referencing hashed files that no longer exist), reload once to pick up
-  // the fresh build instead of leaving the user on a dead white page.
+  // Recover from stale deployments: if a lazy-loaded chunk 404s after a
+  // redeploy, reload once (the boot script enforces the once-per-tab cap).
   useEffect(() => {
     const onPreloadError = (event: Event) => {
       event.preventDefault();
-      const KEY = "grovv.chunk-reload";
+      const KEY = "grovv.boot.reload";
       if (sessionStorage.getItem(KEY)) return;
       sessionStorage.setItem(KEY, "1");
       const url = new URL(window.location.href);
@@ -68,27 +63,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
     window.addEventListener("vite:preloadError", onPreloadError);
     return () => window.removeEventListener("vite:preloadError", onPreloadError);
-  }, []);
-
-  // A service worker from an older build can keep serving stale assets
-  // forever. Unregister any leftover workers and clear their caches.
-  useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-    const hadController = Boolean(navigator.serviceWorker.controller);
-    void navigator.serviceWorker.getRegistrations().then(async (regs) => {
-      await Promise.all(regs.map((reg) => reg.unregister()));
-      if ("caches" in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map((key) => caches.delete(key)));
-      }
-      if (hadController) {
-        const KEY = "grovv.sw.cleared";
-        if (!sessionStorage.getItem(KEY)) {
-          sessionStorage.setItem(KEY, "1");
-          window.location.reload();
-        }
-      }
-    });
   }, []);
 
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -268,8 +242,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <button
                   type="button"
                   onClick={() => {
+                    const KEY = "grovv.boot.reload";
                     try {
-                      sessionStorage.clear();
+                      sessionStorage.removeItem(KEY);
+                    } catch {
+                      /* ignore */
+                    }
+                    try {
+                      sessionStorage.setItem(KEY, "1");
                     } catch {
                       /* ignore */
                     }
@@ -279,7 +259,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   }}
                   className="mt-5 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
                 >
-                  Refresh Grovv
+                  Refresh once
                 </button>
               )}
             </div>
