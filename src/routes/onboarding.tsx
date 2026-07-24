@@ -168,8 +168,8 @@ function OnboardingPage() {
       });
     }
 
-    // After onboarding, show the premium offer screen first.
-    void navigate({ to: "/pricing" });
+    // After onboarding, create an account so progress is backed up.
+    void navigate({ to: "/account" });
   };
 
   return (
@@ -209,7 +209,7 @@ function OnboardingPage() {
           canGoNext={canGoNext}
           onBack={goBack}
           onNext={step === "done" ? finish : goNext}
-          nextLabel={step === "done" ? "See plans" : "Continue"}
+          nextLabel={step === "done" ? "Create my account" : "Continue"}
         />
       </div>
 
@@ -559,7 +559,10 @@ function DoneStep({ name, pickedCount }: { name: string; pickedCount: number }) 
           ✦ Use <strong>Home</strong> to check off today's habits.
         </li>
         <li className="rounded-xl border border-border bg-[var(--surface)] p-3">
-          ⏱ <strong>Focus timer</strong> is part of Grovv Pro — start a 7-day trial from Pricing.
+          ⏱ Use the <strong>Focus timer</strong> for Pomodoro sessions linked to your habits.
+        </li>
+        <li className="rounded-xl border border-border bg-[var(--surface)] p-3">
+          ◐ Next: <strong>create your account</strong> so your progress is saved and synced.
         </li>
         <li className="rounded-xl border border-border bg-[var(--surface)] p-3">
           📊 Open <strong>Analytics</strong> after a few days to see patterns emerge.

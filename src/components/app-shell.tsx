@@ -1,14 +1,12 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { useDb, completionRate, streakFor, shouldShowWeeklyPremiumPrompt } from "@/lib/habits";
+import { useDb, completionRate, streakFor } from "@/lib/habits";
 import { useReminderEngine } from "@/lib/reminders";
 import { CommandPalette } from "@/components/command-palette";
-import { PremiumPromptModal } from "@/components/premium-prompt";
 import { resolveTheme, toggleTheme, useThemeSync } from "@/lib/theme";
 import { displayNameOf, useAuth } from "@/lib/auth";
-import { usePremiumApprovalSync } from "@/lib/premium";
 import { useCloudSync } from "@/lib/sync";
-import { initSupabase } from "@/lib/supabase";
+import { initSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 const NAV = [
   { to: "/", label: "Home", icon: "✦" },
@@ -17,7 +15,6 @@ const NAV = [
   { to: "/wellness", label: "Wellness", icon: "♡" },
   { to: "/photos", label: "Photos", icon: "📷" },
   { to: "/timer", label: "Timer", icon: "⏱" },
-  { to: "/pricing", label: "Pro", icon: "💎" },
   { to: "/account", label: "Account", icon: "◐" },
   { to: "/settings", label: "Settings", icon: "⚙" },
 ] as const;
@@ -37,29 +34,95 @@ export function AppShell({ children }: { children: ReactNode }) {
   const auth = useAuth();
   useReminderEngine(db);
   useThemeSync(db.profile.theme);
-  usePremiumApprovalSync();
   useCloudSync();
 
   useEffect(() => {
     void initSupabase();
   }, []);
+
+  // Tell the early boot script that React hydrated successfully.
+  useEffect(() => {
+    (window as Window & { __GROVV_ALIVE__?: number }).__GROVV_ALIVE__ = 1;
+    const rescue = document.getElementById("grovv-boot-rescue");
+    if (rescue) rescue.remove();
+    try {
+      sessionStorage.removeItem("grovv.boot.reload");
+      sessionStorage.removeItem("grovv.chunk-reload");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Recover from stale deployments: if a lazy-loaded chunk 404s (old HTML
+  // referencing hashed files that no longer exist), reload once to pick up
+  // the fresh build instead of leaving the user on a dead white page.
+  useEffect(() => {
+    const onPreloadError = (event: Event) => {
+      event.preventDefault();
+      const KEY = "grovv.chunk-reload";
+      if (sessionStorage.getItem(KEY)) return;
+      sessionStorage.setItem(KEY, "1");
+      const url = new URL(window.location.href);
+      url.searchParams.set("_r", String(Date.now()));
+      window.location.replace(url.toString());
+    };
+    window.addEventListener("vite:preloadError", onPreloadError);
+    return () => window.removeEventListener("vite:preloadError", onPreloadError);
+  }, []);
+
+  // A service worker from an older build can keep serving stale assets
+  // forever. Unregister any leftover workers and clear their caches.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    void navigator.serviceWorker.getRegistrations().then(async (regs) => {
+      await Promise.all(regs.map((reg) => reg.unregister()));
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      }
+      if (hadController) {
+        const KEY = "grovv.sw.cleared";
+        if (!sessionStorage.getItem(KEY)) {
+          sessionStorage.setItem(KEY, "1");
+          window.location.reload();
+        }
+      }
+    });
+  }, []);
+
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [promptOpen, setPromptOpen] = useState(false);
+  const [shellStuck, setShellStuck] = useState(false);
   const topStreak = db.habits.map((h) => streakFor(db, h.id)).reduce((a, b) => Math.max(a, b), 0);
 
+  // If a page renders the shell with empty content (SSR/hydration gap) and
+  // never fills in, surface a recovery action instead of an endless blank.
   useEffect(() => {
-    const allowed = new Set(["/splash", "/onboarding", "/account"]);
-    if (!db.profile.onboardingCompleted && !allowed.has(loc.pathname)) {
-      void navigate({ to: "/splash" });
+    if (children) {
+      setShellStuck(false);
+      return;
     }
-  }, [db.profile.onboardingCompleted, loc.pathname, navigate]);
-
-  useEffect(() => {
-    if (loc.pathname === "/pricing") return;
-    if (!shouldShowWeeklyPremiumPrompt(db)) return;
-    const id = window.setTimeout(() => setPromptOpen(true), 1200);
+    const id = window.setTimeout(() => setShellStuck(true), 3500);
     return () => window.clearTimeout(id);
-  }, [db, loc.pathname]);
+  }, [children]);
+
+  // Route gating: splash/onboarding first, then a required sign-in.
+  useEffect(() => {
+    const preOnboarding = new Set(["/splash", "/onboarding", "/account"]);
+    if (!db.profile.onboardingCompleted) {
+      if (!preOnboarding.has(loc.pathname)) void navigate({ to: "/splash" });
+      return;
+    }
+    // Onboarding done -> account is required (when cloud is configured).
+    if (
+      isSupabaseConfigured() &&
+      auth.status === "ready" &&
+      !auth.user &&
+      loc.pathname !== "/account"
+    ) {
+      void navigate({ to: "/account" });
+    }
+  }, [db.profile.onboardingCompleted, auth.status, auth.user, loc.pathname, navigate]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -192,7 +255,35 @@ export function AppShell({ children }: { children: ReactNode }) {
               </button>
             </div>
           </div>
-          {children}
+          {children ?? (
+            <div className="rounded-2xl border border-border bg-[var(--surface)] p-8 sm:p-10 text-center max-w-lg">
+              <div className="mx-auto mb-4 size-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+              <p className="font-display text-lg font-semibold">Loading your space…</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {shellStuck
+                  ? "This is taking longer than usual — often an old cached page. Refresh to load the latest Grovv."
+                  : "Just a moment."}
+              </p>
+              {shellStuck && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      sessionStorage.clear();
+                    } catch {
+                      /* ignore */
+                    }
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("_r", String(Date.now()));
+                    window.location.replace(url.toString());
+                  }}
+                  className="mt-5 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+                >
+                  Refresh Grovv
+                </button>
+              )}
+            </div>
+          )}
         </main>
       </div>
 
@@ -222,7 +313,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       </nav>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-      <PremiumPromptModal open={promptOpen} onClose={() => setPromptOpen(false)} />
     </div>
   );
 }

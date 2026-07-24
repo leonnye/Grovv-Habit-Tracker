@@ -42,8 +42,6 @@ export type UserProfile = {
   identity: string;
   onboardingCompleted: boolean;
   focusAreas: string[];
-  trialStartedAt: string | null;
-  plan: "free" | "pro_monthly" | "pro_annual" | "pro_lifetime";
   remindersEnabled: boolean;
   email: string | null;
   vacationActive: boolean;
@@ -52,8 +50,6 @@ export type UserProfile = {
   freezeBalance: number; // freezes left this month (capped at 2)
   adaptiveReminders: boolean;
   theme: ThemePreference;
-  lastPremiumPromptAt: string | null; // ISO — when we last showed the weekly upgrade modal
-  cloudPremium: boolean; // Pro granted by email approval in Supabase (payment stays off)
 };
 
 export type HabitDb = {
@@ -106,8 +102,6 @@ export function defaultProfile(): UserProfile {
     identity: "",
     onboardingCompleted: false,
     focusAreas: [],
-    trialStartedAt: null,
-    plan: "free",
     remindersEnabled: false,
     email: null,
     vacationActive: false,
@@ -116,8 +110,6 @@ export function defaultProfile(): UserProfile {
     freezeBalance: FREEZES_PER_MONTH,
     adaptiveReminders: false,
     theme: "system",
-    lastPremiumPromptAt: null,
-    cloudPremium: false,
   };
 }
 
@@ -159,7 +151,6 @@ function sanitizeProfile(input: unknown): UserProfile {
   if (!isRecord(input)) return fallback;
   const balanceRaw =
     typeof input.freezeBalance === "number" ? input.freezeBalance : FREEZES_PER_MONTH;
-  const validPlans: UserProfile["plan"][] = ["free", "pro_monthly", "pro_annual", "pro_lifetime"];
   const validThemes: ThemePreference[] = ["light", "dark", "system"];
   return {
     name: typeof input.name === "string" ? input.name.trim().slice(0, 40) : "",
@@ -168,13 +159,6 @@ function sanitizeProfile(input: unknown): UserProfile {
     focusAreas: Array.isArray(input.focusAreas)
       ? input.focusAreas.filter((a): a is string => typeof a === "string").slice(0, 8)
       : [],
-    trialStartedAt:
-      typeof input.trialStartedAt === "string" && input.trialStartedAt
-        ? input.trialStartedAt
-        : null,
-    plan: validPlans.includes(input.plan as UserProfile["plan"])
-      ? (input.plan as UserProfile["plan"])
-      : "free",
     remindersEnabled: Boolean(input.remindersEnabled),
     email: typeof input.email === "string" && /\S+@\S+\.\S+/.test(input.email) ? input.email : null,
     vacationActive: Boolean(input.vacationActive),
@@ -191,11 +175,6 @@ function sanitizeProfile(input: unknown): UserProfile {
     theme: validThemes.includes(input.theme as ThemePreference)
       ? (input.theme as ThemePreference)
       : "system",
-    lastPremiumPromptAt:
-      typeof input.lastPremiumPromptAt === "string" && input.lastPremiumPromptAt
-        ? input.lastPremiumPromptAt
-        : null,
-    cloudPremium: Boolean(input.cloudPremium),
   };
 }
 
@@ -609,15 +588,6 @@ export function updateProfile(patch: Partial<UserProfile>) {
   commit({ ...db, profile });
 }
 
-export function startFreeTrial() {
-  const db = loadMemory();
-  if (db.profile.trialStartedAt) return;
-  commit({
-    ...db,
-    profile: { ...db.profile, trialStartedAt: new Date().toISOString() },
-  });
-}
-
 export function setVacation(active: boolean) {
   const db = loadMemory();
   commit({
@@ -691,43 +661,6 @@ export function importDbSnapshot(snapshotJson: string) {
 
 export function resetDb() {
   commit(defaultDb());
-}
-
-/* --- premium helpers --- */
-
-export function isPremium(db: HabitDb, days = 7) {
-  if (db.profile.plan !== "free") return true;
-  if (db.profile.cloudPremium) return true;
-  return trialDaysLeft(db, days) > 0;
-}
-
-export function trialDaysLeft(db: HabitDb, days = 7) {
-  if (!db.profile.trialStartedAt) return 0;
-  const started = new Date(db.profile.trialStartedAt).getTime();
-  const elapsedDays = Math.floor((Date.now() - started) / 86400000);
-  return Math.max(0, days - elapsedDays);
-}
-
-const PREMIUM_PROMPT_INTERVAL_MS = 7 * 86400 * 1000;
-
-/** Returns true if we should pop the weekly upgrade modal. */
-export function shouldShowWeeklyPremiumPrompt(db: HabitDb): boolean {
-  if (!db.profile.onboardingCompleted) return false;
-  if (db.profile.plan !== "free") return false;
-  const last = db.profile.lastPremiumPromptAt;
-  if (!last) return true;
-  const ts = new Date(last).getTime();
-  if (isNaN(ts)) return true;
-  return Date.now() - ts >= PREMIUM_PROMPT_INTERVAL_MS;
-}
-
-/** Records that the upgrade modal was just shown so it won't show again for 7 days. */
-export function markPremiumPromptShown() {
-  const db = loadMemory();
-  commit({
-    ...db,
-    profile: { ...db.profile, lastPremiumPromptAt: new Date().toISOString() },
-  });
 }
 
 /** Updates the user's theme preference. */

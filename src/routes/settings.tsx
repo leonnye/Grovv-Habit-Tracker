@@ -4,10 +4,8 @@ import { AppShell, PageHeader } from "@/components/app-shell";
 import {
   exportDbSnapshot,
   importDbSnapshot,
-  isPremium,
   resetDb,
   setVacation,
-  trialDaysLeft,
   updateProfile,
   useDb,
   useMounted,
@@ -58,7 +56,6 @@ function SettingsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const premium = isPremium(db);
   const habitsWithReminder = db.habits.filter((h) => h.reminderTime);
   const habitsWithoutReminder = db.habits.filter((h) => !h.reminderTime);
 
@@ -254,33 +251,13 @@ function SettingsPage() {
           </div>
         </Card>
 
-        {/* Pro */}
-        <Card
-          title={premium ? "Grovv Pro" : "Upgrade"}
-          desc={
-            premium
-              ? "You're on Pro. Thanks for supporting the app."
-              : "Unlock wellness, journal, focus timer, CSV export and insights."
-          }
-        >
-          <div className="w-full flex flex-wrap gap-2 items-center">
-            <Link
-              to="/pricing"
-              className="bg-primary text-primary-foreground px-5 py-2 rounded-full text-sm font-medium hover:shadow-glow transition-all"
-            >
-              {premium ? "Manage Pro" : "See plans"}
-            </Link>
-            <Pill>Trial days left: {trialDaysLeft(db)}</Pill>
-          </div>
-        </Card>
-
         <Card
           title="Account & cloud sync"
           desc={
             cloudConfigured
               ? auth.user
                 ? "You're signed in. Habits, wellness, journal, and photos sync to your account."
-                : "Sign in to back up everything and pick up where you left off on any device — optional."
+                : "Sign in to back up everything and pick up where you left off on any device."
               : "Local-only mode. Cloud sync isn't configured in this build."
           }
         >
@@ -315,7 +292,7 @@ function SettingsPage() {
             </div>
           ) : (
             <div className="w-full flex flex-wrap items-center gap-2">
-              <Pill>{cloudConfigured ? "Sign-in optional" : "Local-only"}</Pill>
+              <Pill>{cloudConfigured ? "Sign-in required" : "Local-only"}</Pill>
               <Pill>Offline-first</Pill>
               <Link
                 to="/account"
@@ -339,22 +316,13 @@ function SettingsPage() {
             >
               Download JSON
             </button>
-            {premium ? (
-              <button
-                type="button"
-                onClick={exportCsv}
-                className="border border-primary/40 text-foreground px-5 py-2 rounded-full text-sm font-medium hover:bg-primary/10 transition-colors"
-              >
-                Download CSV
-              </button>
-            ) : (
-              <Link
-                to="/pricing"
-                className="border border-border px-5 py-2 rounded-full text-sm font-medium text-muted-foreground hover:bg-[var(--surface-2)] transition-colors"
-              >
-                💎 CSV export · Pro
-              </Link>
-            )}
+            <button
+              type="button"
+              onClick={exportCsv}
+              className="border border-primary/40 text-foreground px-5 py-2 rounded-full text-sm font-medium hover:bg-primary/10 transition-colors"
+            >
+              Download CSV
+            </button>
           </div>
         </Card>
 

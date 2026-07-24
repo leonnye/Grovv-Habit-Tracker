@@ -1,15 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell, PageHeader } from "@/components/app-shell";
-import { PremiumGate } from "@/components/premium-gate";
-import {
-  habitColor,
-  isCheckedToday,
-  isPremium,
-  toggleCheckin,
-  useDb,
-  useMounted,
-} from "@/lib/habits";
+import { habitColor, isCheckedToday, toggleCheckin, useDb, useMounted } from "@/lib/habits";
 import { playCheckinFx } from "@/lib/fx";
 
 export const Route = createFileRoute("/timer")({ component: TimerPage });
@@ -24,7 +16,6 @@ const PRESETS = [
 function TimerPage() {
   const db = useDb();
   const mounted = useMounted();
-  const premium = isPremium(db);
 
   const [duration, setDuration] = useState(25 * 60);
   const [remaining, setRemaining] = useState(25 * 60);
@@ -98,33 +89,6 @@ function TimerPage() {
   const linkedHabit = db.habits.find((h) => h.id === linkedHabitId);
 
   if (!mounted) return <AppShell>{null}</AppShell>;
-
-  if (!premium) {
-    return (
-      <AppShell>
-        <PageHeader
-          eyebrow="Focus mode"
-          title={
-            <>
-              Focus <span className="text-gradient">timer</span>
-            </>
-          }
-          subtitle="Pomodoro and deep-work sessions, optionally linked to a habit."
-        />
-        <PremiumGate
-          title="Stay focused with the Grovv timer"
-          description="Run timed sessions tied to your habits — and log a check-in automatically when you finish."
-          features={[
-            "Pomodoro / Deep work / custom presets",
-            "Per-habit default duration",
-            "Auto check-in on session complete",
-            "Background notification when done",
-            "Daily focus minutes in analytics",
-          ]}
-        />
-      </AppShell>
-    );
-  }
 
   return (
     <AppShell>

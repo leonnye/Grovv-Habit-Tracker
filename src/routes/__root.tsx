@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { BOOT_SCRIPT } from "@/lib/boot-script";
 
 function NotFoundComponent() {
   return (
@@ -80,6 +81,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <script
+          // Early recovery for returning visitors stuck on a stale cached build.
+          dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }}
+        />
       </head>
       <body>
         {children}

@@ -10,7 +10,7 @@ import {
   useAuth,
 } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase";
-import { isPremium, updateProfile, useDb, useMounted } from "@/lib/habits";
+import { updateProfile, useDb, useMounted } from "@/lib/habits";
 
 export const Route = createFileRoute("/account")({ component: AccountPage });
 
@@ -73,10 +73,10 @@ function AccountPage() {
         eyebrow="Account"
         title={
           <>
-            Your <span className="text-gradient">space</span>, your call
+            Your <span className="text-gradient">account</span>
           </>
         }
-        subtitle="Sign in to back up habits, wellness, journal, and progress photos — then pick up where you left off on any device. Totally optional; Grovv works fully offline."
+        subtitle="Sign in so your habits, wellness, journal, and photos are saved to your account — then pick up where you left off on any device."
       />
 
       {!configured && (
@@ -100,8 +100,6 @@ function AccountPage() {
             <SignedInPanel
               email={auth.user?.email ?? ""}
               name={displayNameOf(auth.user)}
-              pro={isPremium(db)}
-              approved={db.profile.cloudPremium}
               onSignOut={async () => {
                 setBusy(true);
                 try {
@@ -204,20 +202,7 @@ function AccountPage() {
         </section>
 
         <aside className="space-y-4">
-          <Card title="Skip it — stay local">
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Grovv was built to work offline. Skip sign-in and your habits, journal and wellness
-              data live only in this browser.
-            </p>
-            <Link
-              to="/"
-              className="mt-3 inline-flex items-center rounded-full border border-border bg-[var(--surface-2)] px-4 py-2 text-sm font-medium hover:border-primary/40 transition-colors"
-            >
-              Continue without an account →
-            </Link>
-          </Card>
-
-          <Card title="Why sign in?">
+          <Card title="Why an account?">
             <ul className="text-xs sm:text-sm text-muted-foreground space-y-2">
               <li className="flex gap-2">
                 <span aria-hidden>◎</span> Habits, check-ins, and streaks sync to your account
@@ -267,15 +252,11 @@ function ModeSwitcher({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => voi
 function SignedInPanel({
   email,
   name,
-  pro,
-  approved,
   onSignOut,
   busy,
 }: {
   email: string;
   name: string;
-  pro: boolean;
-  approved: boolean;
   onSignOut: () => void;
   busy: boolean;
 }) {
@@ -289,22 +270,7 @@ function SignedInPanel({
           <p className="font-display text-base font-semibold truncate">{name || "Signed in"}</p>
           <p className="text-xs text-muted-foreground truncate">{email}</p>
         </div>
-        {pro && (
-          <span className="ml-auto shrink-0 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-primary">
-            💎 Pro
-          </span>
-        )}
       </div>
-      {approved ? (
-        <div className="mb-3 rounded-xl border border-primary/30 bg-primary/8 p-3 text-sm">
-          Pro access is active on this account — thanks for being here.
-        </div>
-      ) : (
-        <div className="mb-3 rounded-xl border border-border bg-[var(--surface-2)] p-3 text-xs text-muted-foreground">
-          Want Pro? Send us this email ({email}) and we'll approve it. Pro then unlocks
-          automatically here.
-        </div>
-      )}
       <div className="rounded-xl border border-[color:var(--success)]/30 bg-[color:var(--success)]/10 p-3 text-sm text-foreground">
         Cloud sync is on. Your habits, wellness, journal, and photos stay backed up while you're
         signed in. Open{" "}

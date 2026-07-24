@@ -23,6 +23,8 @@ function PhotosPage() {
   const [caption, setCaption] = useState("");
   const [habitId, setHabitId] = useState<string>("");
   const [uploading, setUploading] = useState(false);
+  const [importProgress, setImportProgress] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [lightbox, setLightbox] = useState<PhotoWithUrl | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -56,11 +58,79 @@ function PhotosPage() {
 
   if (!mounted) return <AppShell>{null}</AppShell>;
 
-  const handlePick = (file: File | null) => {
+  const handlePick = (files: FileList | null) => {
     setError(null);
-    setPendingFile(file);
+    const list = files ? Array.from(files) : [];
+    if (list.length > 1) {
+      // Several photos picked at once — import them all straight away.
+      void handleImport(list);
+      return;
+    }
+    setPendingFile(list[0] ?? null);
     setCaption("");
     setHabitId("");
+  };
+
+  const handleImport = async (files: File[]) => {
+    setUploading(true);
+    setError(null);
+    let done = 0;
+    let failed = 0;
+    for (const file of files) {
+      setImportProgress(`Importing ${done + failed + 1} of ${files.length}…`);
+      try {
+        await uploadPhoto({ file, loggedOn: ymd(new Date()) });
+        done++;
+      } catch {
+        failed++;
+      }
+    }
+    setImportProgress(null);
+    setUploading(false);
+    if (inputRef.current) inputRef.current.value = "";
+    if (failed > 0) {
+      setError(
+        `Imported ${done} photo${done === 1 ? "" : "s"} — ${failed} failed (unsupported type or too large).`,
+      );
+    }
+    await refresh();
+  };
+
+  const handleExportAll = async () => {
+    if (photos.length === 0) return;
+    setExporting(true);
+    setError(null);
+    try {
+      let index = 0;
+      for (const photo of photos) {
+        if (!photo.signedUrl) continue;
+        index++;
+        const res = await fetch(photo.signedUrl);
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        const ext = photo.storage_path.split(".").pop() ?? "jpg";
+        const date = photo.created_at.slice(0, 10);
+        triggerDownload(blob, `grovv-photo-${date}-${index}.${ext}`);
+        // Small delay so the browser doesn't block rapid downloads.
+        await new Promise((r) => setTimeout(r, 350));
+      }
+    } catch {
+      setError("Export stopped early — check your connection and try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleDownloadOne = async (photo: PhotoWithUrl) => {
+    if (!photo.signedUrl) return;
+    try {
+      const res = await fetch(photo.signedUrl);
+      const blob = await res.blob();
+      const ext = photo.storage_path.split(".").pop() ?? "jpg";
+      triggerDownload(blob, `grovv-photo-${photo.created_at.slice(0, 10)}.${ext}`);
+    } catch {
+      setError("Couldn't download that photo. Try again.");
+    }
   };
 
   const handleUpload = async () => {
@@ -136,22 +206,26 @@ function PhotosPage() {
       ) : (
         <div className="grid lg:grid-cols-[1fr_2fr] gap-4 lg:gap-6">
           <section className="rounded-2xl border border-border bg-[var(--surface)] p-5 sm:p-6 self-start">
-            <h3 className="font-display text-base font-semibold">Add a photo</h3>
+            <h3 className="font-display text-base font-semibold">Add photos</h3>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1 mb-4">
-              JPG, PNG, WEBP or HEIC, up to 8 MB.
+              JPG, PNG, WEBP or HEIC, up to 8 MB each. Pick several at once to import them all.
             </p>
 
             <label className="block">
-              <span className="sr-only">Choose photo</span>
+              <span className="sr-only">Choose photos</span>
               <input
                 ref={inputRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
-                onChange={(e) => handlePick(e.target.files?.[0] ?? null)}
+                multiple
+                onChange={(e) => handlePick(e.target.files)}
                 className="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-semibold file:text-primary-foreground hover:file:opacity-90"
               />
             </label>
+
+            {importProgress && (
+              <p className="mt-3 text-sm text-primary font-semibold">{importProgress}</p>
+            )}
 
             {preview && (
               <div className="mt-4">
@@ -235,14 +309,26 @@ function PhotosPage() {
                   {photos.length} photo{photos.length === 1 ? "" : "s"}
                 </span>
               </h3>
-              <button
-                type="button"
-                onClick={() => void refresh()}
-                disabled={loading}
-                className="text-xs text-primary font-semibold disabled:opacity-50"
-              >
-                {loading ? "Refreshing…" : "Refresh"}
-              </button>
+              <div className="flex items-center gap-3">
+                {photos.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => void handleExportAll()}
+                    disabled={exporting}
+                    className="text-xs text-primary font-semibold disabled:opacity-50"
+                  >
+                    {exporting ? "Exporting…" : "⬇ Export all"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void refresh()}
+                  disabled={loading}
+                  className="text-xs text-primary font-semibold disabled:opacity-50"
+                >
+                  {loading ? "Refreshing…" : "Refresh"}
+                </button>
+              </div>
             </div>
 
             {loading && photos.length === 0 ? (
@@ -305,6 +391,7 @@ function PhotosPage() {
           habitName={db.habits.find((h) => h.id === lightbox.habit_id)?.name}
           onClose={() => setLightbox(null)}
           onDelete={() => void handleDelete(lightbox)}
+          onDownload={() => void handleDownloadOne(lightbox)}
         />
       )}
     </AppShell>
@@ -330,16 +417,27 @@ function NoticeCard({
   );
 }
 
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function Lightbox({
   photo,
   habitName,
   onClose,
   onDelete,
+  onDownload,
 }: {
   photo: PhotoWithUrl;
   habitName?: string;
   onClose: () => void;
   onDelete: () => void;
+  onDownload: () => void;
 }) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -382,6 +480,13 @@ function Lightbox({
           </div>
         </div>
         <div className="mt-5 flex flex-wrap gap-2 justify-end">
+          <button
+            type="button"
+            onClick={onDownload}
+            className="rounded-full border border-border bg-[var(--surface-2)] px-5 py-2.5 text-sm font-semibold hover:border-primary/40 transition-colors"
+          >
+            ⬇ Download
+          </button>
           <button
             type="button"
             onClick={onDelete}

@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell, PageHeader } from "@/components/app-shell";
-import { PremiumGate } from "@/components/premium-gate";
 import {
   addDays,
   deleteJournalEntry,
-  isPremium,
   logWellness,
   moodHabitCorrelations,
   setJournalEntry,
@@ -32,8 +30,6 @@ function WellnessPage() {
   const [tab, setTab] = useState<TabKey>("today");
   if (!mounted) return <AppShell>{null}</AppShell>;
 
-  const premium = isPremium(db);
-
   return (
     <AppShell>
       <PageHeader
@@ -46,49 +42,34 @@ function WellnessPage() {
         subtitle="Mood, sleep, hydration, and a private journal — designed to help you spot patterns."
       />
 
-      {!premium ? (
-        <PremiumGate
-          title="Wellness, Journal & Mood insights"
-          description="Track mood, sleep, water and hydration, write daily journal entries, and uncover which habits make you feel best — all locked to Grovv Pro."
-          features={[
-            "Daily mood + private note",
-            "Sleep & hydration tracking",
-            "14-day patterns and last-month review",
-            "Private journal with tags",
-            "Mood ↔ habit correlations",
-            "Premium-only insight cards",
-          ]}
-        />
-      ) : (
-        <>
-          <div className="mb-6 flex flex-wrap gap-2">
-            {TABS.map((t) => {
-              const active = tab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTab(t.id)}
-                  aria-pressed={active}
-                  className={
-                    "rounded-full border px-4 py-2 text-sm font-medium transition-colors " +
-                    (active
-                      ? "border-primary/60 bg-primary/15 text-foreground"
-                      : "border-border bg-[var(--surface)] text-muted-foreground hover:text-foreground")
-                  }
-                >
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
+      <>
+        <div className="mb-6 flex flex-wrap gap-2">
+          {TABS.map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                aria-pressed={active}
+                className={
+                  "rounded-full border px-4 py-2 text-sm font-medium transition-colors " +
+                  (active
+                    ? "border-primary/60 bg-primary/15 text-foreground"
+                    : "border-border bg-[var(--surface)] text-muted-foreground hover:text-foreground")
+                }
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
 
-          {tab === "today" && <TodayTab />}
-          {tab === "history" && <HistoryTab />}
-          {tab === "journal" && <JournalTab />}
-          {tab === "insights" && <InsightsTab />}
-        </>
-      )}
+        {tab === "today" && <TodayTab />}
+        {tab === "history" && <HistoryTab />}
+        {tab === "journal" && <JournalTab />}
+        {tab === "insights" && <InsightsTab />}
+      </>
     </AppShell>
   );
 }

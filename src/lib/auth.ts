@@ -42,18 +42,32 @@ function ensureSubscribed() {
     return;
   }
 
+  // Safety net: if session restore hangs (paused project / long idle),
+  // unblock the UI quickly. A later auth event can still update the store.
+  const failSafe = window.setTimeout(() => {
+    if (state.status === "loading") setState({ status: "ready" });
+  }, 2500);
+
   void initSupabase().then((sb) => {
     if (!sb) {
+      window.clearTimeout(failSafe);
       setState({ status: "ready" });
       return;
     }
-    void sb.auth.getSession().then(({ data }) => {
-      setState({
-        status: "ready",
-        session: data.session ?? null,
-        user: data.session?.user ?? null,
+    void sb.auth
+      .getSession()
+      .then(({ data }) => {
+        window.clearTimeout(failSafe);
+        setState({
+          status: "ready",
+          session: data.session ?? null,
+          user: data.session?.user ?? null,
+        });
+      })
+      .catch(() => {
+        window.clearTimeout(failSafe);
+        setState({ status: "ready" });
       });
-    });
     sb.auth.onAuthStateChange((_event, session) => {
       setState({
         status: "ready",
@@ -84,6 +98,27 @@ async function clientSupabase() {
   return (await initSupabase()) ?? getSupabase();
 }
 
+/** Turn opaque network errors into something a person can act on. */
+function friendlyAuthError(err: unknown): string {
+  const raw =
+    err && typeof err === "object" && "message" in err && typeof (err as { message: unknown }).message === "string"
+      ? (err as { message: string }).message
+      : err instanceof Error
+        ? err.message
+        : String(err ?? "Something went wrong.");
+  const msg = raw.toLowerCase();
+  if (
+    msg.includes("failed to fetch") ||
+    msg.includes("networkerror") ||
+    msg.includes("network request failed") ||
+    msg.includes("load failed") ||
+    msg.includes("fetch failed")
+  ) {
+    return "Can't reach the cloud right now. Your Supabase project may be paused — open the Supabase dashboard, restore the project, wait a minute, then try again.";
+  }
+  return raw;
+}
+
 export async function signUpWithEmail(
   email: string,
   password: string,
@@ -91,36 +126,48 @@ export async function signUpWithEmail(
 ): Promise<AuthResult> {
   const sb = await clientSupabase();
   if (!sb) return { ok: false, error: "Cloud sync isn't configured for this build." };
-  const { error } = await sb.auth.signUp({
-    email,
-    password,
-    options: {
-      data: name ? { display_name: name } : undefined,
-    },
-  });
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  try {
+    const { error } = await sb.auth.signUp({
+      email,
+      password,
+      options: {
+        data: name ? { display_name: name } : undefined,
+      },
+    });
+    if (error) return { ok: false, error: friendlyAuthError(error) };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: friendlyAuthError(err) };
+  }
 }
 
 export async function signInWithEmail(email: string, password: string): Promise<AuthResult> {
   const sb = await clientSupabase();
   if (!sb) return { ok: false, error: "Cloud sync isn't configured for this build." };
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  try {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) return { ok: false, error: friendlyAuthError(error) };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: friendlyAuthError(err) };
+  }
 }
 
 export async function sendMagicLink(email: string): Promise<AuthResult> {
   const sb = await clientSupabase();
   if (!sb) return { ok: false, error: "Cloud sync isn't configured for this build." };
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
-    },
-  });
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  try {
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+      },
+    });
+    if (error) return { ok: false, error: friendlyAuthError(error) };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: friendlyAuthError(err) };
+  }
 }
 
 export async function signOut(): Promise<void> {

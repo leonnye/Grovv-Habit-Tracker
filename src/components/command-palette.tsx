@@ -44,7 +44,6 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       { id: "go-timer", label: "Open focus timer", icon: "⏱", path: "/timer" },
       { id: "go-account", label: "Account & sign-in", icon: "◐", path: "/account" },
       { id: "go-settings", label: "Open settings", icon: "⚙", path: "/settings" },
-      { id: "go-pricing", label: "Grovv Pro", icon: "💎", path: "/pricing" },
     ];
     const navActions: Action[] = navItems.map((n) => ({
       id: n.id,

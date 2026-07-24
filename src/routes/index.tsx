@@ -346,7 +346,7 @@ function TodayPage() {
               })}
             </div>
             <p className="mt-3 text-[0.65rem] text-muted-foreground text-center">
-              Wellness is a Pro feature — start a free trial to unlock journaling & insights.
+              Tap a mood to open Wellness — journaling and insights included.
             </p>
           </div>
         </aside>
