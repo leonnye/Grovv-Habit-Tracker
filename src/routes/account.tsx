@@ -77,7 +77,7 @@ function AccountPage() {
             Your <span className="text-gradient">account</span>
           </>
         }
-        subtitle="Sign in so your habits, wellness, journal, and photos are saved to your account — then pick up where you left off on any device."
+        subtitle="Optional. Habits and wellness already save on this device. Sign in to sync across devices and store progress photos in the cloud."
       />
 
       {!configured && (
@@ -206,19 +206,31 @@ function AccountPage() {
         </section>
 
         <aside className="space-y-4">
+          {!signedIn && (
+            <Card title="Use Grovv without an account">
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Habits, check-ins, wellness, and journal stay on this device. Photos and
+                cross-device sync need a free account.
+              </p>
+              <Link
+                to="/"
+                className="mt-3 inline-flex items-center rounded-full border border-border bg-[var(--surface-2)] px-4 py-2 text-sm font-medium hover:border-primary/40 transition-colors"
+              >
+                Continue without signing in →
+              </Link>
+            </Card>
+          )}
+
           <Card title="Why an account?">
             <ul className="text-xs sm:text-sm text-muted-foreground space-y-2">
               <li className="flex gap-2">
-                <span aria-hidden>◎</span> Habits, check-ins, and streaks sync to your account
+                <span aria-hidden>◎</span> Back up habits and pick up on another device
               </li>
               <li className="flex gap-2">
-                <span aria-hidden>♡</span> Wellness logs and journal entries come with you
+                <span aria-hidden>♡</span> Wellness logs and journal come with you
               </li>
               <li className="flex gap-2">
                 <span aria-hidden>📸</span> Progress photos in a private cloud gallery
-              </li>
-              <li className="flex gap-2">
-                <span aria-hidden>🔁</span> Sign in on another device and continue where you left off
               </li>
             </ul>
           </Card>

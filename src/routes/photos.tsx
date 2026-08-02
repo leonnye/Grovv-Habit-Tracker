@@ -193,7 +193,7 @@ function PhotosPage() {
       ) : !auth.user ? (
         <NoticeCard
           title="Sign in to use Photos"
-          body="Sign in to back up habits, wellness, and journal everywhere — and store progress photos in your private gallery."
+          body="Photos are stored in your private cloud gallery — sign in to upload, import, and export them. Habits and wellness already work on this device without an account."
           cta={
             <Link
               to="/account"

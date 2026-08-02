@@ -6,7 +6,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { resolveTheme, toggleTheme, useThemeSync } from "@/lib/theme";
 import { displayNameOf, useAuth } from "@/lib/auth";
 import { useCloudSync } from "@/lib/sync";
-import { initSupabase, isSupabaseConfigured } from "@/lib/supabase";
+import { initSupabase } from "@/lib/supabase";
 import { registerPwa } from "@/lib/pwa";
 
 const NAV = [
@@ -80,23 +80,14 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(id);
   }, [children]);
 
-  // Route gating: splash/onboarding first, then a required sign-in.
+  // Route gating: splash/onboarding first. Sign-in stays optional —
+  // habits/wellness work locally; photos & cloud backup need an account.
   useEffect(() => {
     const preOnboarding = new Set(["/splash", "/onboarding", "/account"]);
-    if (!db.profile.onboardingCompleted) {
-      if (!preOnboarding.has(loc.pathname)) void navigate({ to: "/splash" });
-      return;
+    if (!db.profile.onboardingCompleted && !preOnboarding.has(loc.pathname)) {
+      void navigate({ to: "/splash" });
     }
-    // Onboarding done -> account is required (when cloud is configured).
-    if (
-      isSupabaseConfigured() &&
-      auth.status === "ready" &&
-      !auth.user &&
-      loc.pathname !== "/account"
-    ) {
-      void navigate({ to: "/account" });
-    }
-  }, [db.profile.onboardingCompleted, auth.status, auth.user, loc.pathname, navigate]);
+  }, [db.profile.onboardingCompleted, loc.pathname, navigate]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

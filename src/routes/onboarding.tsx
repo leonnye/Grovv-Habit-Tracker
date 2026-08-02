@@ -168,8 +168,8 @@ function OnboardingPage() {
       });
     }
 
-    // After onboarding, create an account so progress is backed up.
-    void navigate({ to: "/account" });
+    // After onboarding, jump into the app. Sign-in is optional (local habits work offline).
+    void navigate({ to: "/" });
   };
 
   return (
@@ -209,7 +209,7 @@ function OnboardingPage() {
           canGoNext={canGoNext}
           onBack={goBack}
           onNext={step === "done" ? finish : goNext}
-          nextLabel={step === "done" ? "Create my account" : "Continue"}
+          nextLabel={step === "done" ? "Start using Grovv" : "Continue"}
         />
       </div>
 
@@ -562,7 +562,7 @@ function DoneStep({ name, pickedCount }: { name: string; pickedCount: number }) 
           ⏱ Use the <strong>Focus timer</strong> for Pomodoro sessions linked to your habits.
         </li>
         <li className="rounded-xl border border-border bg-[var(--surface)] p-3">
-          ◐ Next: <strong>create your account</strong> so your progress is saved and synced.
+          ◐ Habits save on this device. Sign in anytime to sync across devices and unlock Photos.
         </li>
         <li className="rounded-xl border border-border bg-[var(--surface)] p-3">
           📊 Open <strong>Analytics</strong> after a few days to see patterns emerge.

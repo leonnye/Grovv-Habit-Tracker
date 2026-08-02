@@ -303,7 +303,7 @@ function SettingsPage() {
             cloudConfigured
               ? auth.user
                 ? "You're signed in. Habits, wellness, journal, and photos sync to your account."
-                : "Sign in to back up everything and pick up where you left off on any device."
+                : "Optional. Habits already save on this device. Sign in to sync across devices and unlock Photos."
               : "Local-only mode. Cloud sync isn't configured in this build."
           }
         >
@@ -338,7 +338,7 @@ function SettingsPage() {
             </div>
           ) : (
             <div className="w-full flex flex-wrap items-center gap-2">
-              <Pill>{cloudConfigured ? "Sign-in required" : "Local-only"}</Pill>
+              <Pill>{cloudConfigured ? "Sign-in optional" : "Local-only"}</Pill>
               <Pill>Offline-first</Pill>
               <Link
                 to="/account"

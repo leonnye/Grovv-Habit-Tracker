@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
-import { useDb, useMounted } from "@/lib/habits";
+import { updateProfile, useDb, useMounted } from "@/lib/habits";
 
 export const Route = createFileRoute("/splash")({ component: SplashPage });
 
@@ -30,6 +30,12 @@ function SplashPage() {
 
   if (!mounted) return null;
 
+  const skipIntro = () => {
+    // Without this, AppShell keeps bouncing "/" back to /splash.
+    updateProfile({ onboardingCompleted: true });
+    void navigate({ to: "/" });
+  };
+
   return (
     <div className="grovv-splash min-h-screen text-foreground px-4 py-12 sm:py-16 grid place-items-center">
       <div className="grovv-blob b1" />
@@ -50,7 +56,6 @@ function SplashPage() {
       ))}
 
       <div className="relative w-full max-w-2xl text-center">
-        {/* Animated growing seed */}
         <div className="relative mx-auto mb-8 grid place-items-center">
           <div className="grovv-seed">
             <div className="grovv-leaf l1" />
@@ -115,10 +120,10 @@ function SplashPage() {
           </button>
           <button
             type="button"
-            onClick={() => void navigate({ to: "/" })}
+            onClick={skipIntro}
             className="w-full sm:w-auto rounded-full border border-border bg-[var(--surface)]/60 backdrop-blur-md px-7 py-3 text-sm font-semibold text-foreground hover:bg-[var(--surface)] transition-colors"
           >
-            Skip intro
+            Skip for now
           </button>
         </div>
 
@@ -126,14 +131,7 @@ function SplashPage() {
           className="mt-8 text-xs text-foreground/60 grovv-fade-up"
           style={{ animationDelay: "0.9s" }}
         >
-          Works fully offline · sign-in is optional ·{" "}
-          <button
-            type="button"
-            onClick={() => void navigate({ to: "/account" })}
-            className="underline underline-offset-2 hover:text-foreground"
-          >
-            sign in to sync photos
-          </button>
+          Skip the setup and jump in — you can add habits anytime from Habits.
         </p>
       </div>
     </div>
